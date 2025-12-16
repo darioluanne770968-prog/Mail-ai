@@ -1,9 +1,15 @@
 import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from 'plasmo';
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Mail, X, MessageSquare, FileText, Wand2, Sparkles } from 'lucide-react';
+import {
+  Mail, X, MessageSquare, FileText, Wand2, Sparkles,
+  Bot, Shield, Inbox, BarChart3
+} from 'lucide-react';
 import { useEmail, useAI, useSettings } from '~/hooks';
-import { ReplyPanel, SummaryCard, ComposeAssist, ImprovePanel, Tabs, Button } from '~/components';
+import {
+  ReplyPanel, SummaryCard, ComposeAssist, ImprovePanel, Tabs, Button,
+  ChatPanel, SecurityScanner, BatchProcessor, AnalyticsDashboard
+} from '~/components';
 import '~/styles/globals.css';
 
 export const config: PlasmoCSConfig = {
@@ -25,8 +31,8 @@ function FloatingButton({ onClick }: { onClick: () => void }) {
 }
 
 // Main AI Panel Component
-function AIPanel({ onClose }: { onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<'reply' | 'summarize' | 'compose' | 'improve'>('reply');
+function AIPanel({ onClose, onOpenChat }: { onClose: () => void; onOpenChat: () => void }) {
+  const [activeTab, setActiveTab] = useState<'reply' | 'summarize' | 'compose' | 'improve' | 'security' | 'inbox' | 'analytics'>('reply');
   const { currentEmail, insertContent, hasEmail } = useEmail();
   const { settings } = useSettings();
   const {
@@ -53,6 +59,9 @@ function AIPanel({ onClose }: { onClose: () => void }) {
     { id: 'summarize', label: 'Summarize', icon: <FileText size={14} /> },
     { id: 'compose', label: 'Compose', icon: <Wand2 size={14} /> },
     { id: 'improve', label: 'Improve', icon: <Sparkles size={14} /> },
+    { id: 'security', label: 'Security', icon: <Shield size={14} /> },
+    { id: 'inbox', label: 'Inbox', icon: <Inbox size={14} /> },
+    { id: 'analytics', label: 'Stats', icon: <BarChart3 size={14} /> },
   ];
 
   const handleGenerateReply = async (params: { tone: any; length: any }) => {
@@ -153,13 +162,36 @@ function AIPanel({ onClose }: { onClose: () => void }) {
             error={improveError}
           />
         )}
+
+        {activeTab === 'security' && (
+          <SecurityScanner
+            emailContent={currentEmail?.body || ''}
+            sender={currentEmail?.from}
+            subject={currentEmail?.subject}
+          />
+        )}
+
+        {activeTab === 'inbox' && (
+          <BatchProcessor />
+        )}
+
+        {activeTab === 'analytics' && (
+          <AnalyticsDashboard />
+        )}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">
+      {/* Footer with Chat Button */}
+      <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+        <p className="text-xs text-gray-500">
           Powered by AI • Your data is secure
         </p>
+        <button
+          onClick={onOpenChat}
+          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+        >
+          <Bot size={14} />
+          Open Chat
+        </button>
       </div>
     </div>
   );
@@ -168,7 +200,9 @@ function AIPanel({ onClose }: { onClose: () => void }) {
 // Main Content Script Component
 function GmailMailAI() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const { settings } = useSettings();
+  const { currentEmail } = useEmail();
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -177,18 +211,43 @@ function GmailMailAI() {
         e.preventDefault();
         setIsPanelOpen((prev) => !prev);
       }
+      if (e.altKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setIsChatOpen((prev) => !prev);
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const emailContext = currentEmail ? {
+    id: currentEmail.id || '',
+    subject: currentEmail.subject || '',
+    from: currentEmail.from || '',
+    body: currentEmail.body || '',
+  } : undefined;
+
   return (
     <>
-      {settings.showFloatingButton && !isPanelOpen && (
+      {settings.showFloatingButton && !isPanelOpen && !isChatOpen && (
         <FloatingButton onClick={() => setIsPanelOpen(true)} />
       )}
-      {isPanelOpen && <AIPanel onClose={() => setIsPanelOpen(false)} />}
+      {isPanelOpen && (
+        <AIPanel
+          onClose={() => setIsPanelOpen(false)}
+          onOpenChat={() => {
+            setIsPanelOpen(false);
+            setIsChatOpen(true);
+          }}
+        />
+      )}
+      {isChatOpen && (
+        <ChatPanel
+          onClose={() => setIsChatOpen(false)}
+          emailContext={emailContext}
+        />
+      )}
     </>
   );
 }

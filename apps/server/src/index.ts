@@ -6,6 +6,7 @@ import { logger } from './utils/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { aiRoutes } from './routes/ai.routes.js';
 import { healthRoutes } from './routes/health.routes.js';
+import { advancedRoutes } from './routes/advanced.routes.js';
 
 async function main() {
   const fastify = Fastify({
@@ -41,6 +42,7 @@ async function main() {
   // Register routes
   await fastify.register(healthRoutes);
   await fastify.register(aiRoutes, { prefix: '/api/v1/ai' });
+  await fastify.register(advancedRoutes, { prefix: '/api/v1' });
 
   // Root endpoint
   fastify.get('/', async () => ({

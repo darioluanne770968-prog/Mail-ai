@@ -5,3 +5,7 @@ export { ReplyPanel } from './ReplyPanel';
 export { SummaryCard } from './SummaryCard';
 export { ComposeAssist } from './ComposeAssist';
 export { ImprovePanel } from './ImprovePanel';
+export { ChatPanel } from './chat';
+export { AnalyticsDashboard } from './dashboard';
+export { SecurityScanner } from './security';
+export { BatchProcessor } from './batch';
